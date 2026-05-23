@@ -1,0 +1,16 @@
+*.pyc
+*.pyo
+__pycache__/
+.env
+dist/
+build/
+*.egg-info/
+obsidian_cli.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+.coverage
+coverage.xml
