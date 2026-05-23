@@ -1,248 +1,262 @@
-# obsidian-agent-cli Skill
+---
+name: "obsidian-agent-cli"
+description: >-
+  Full-featured command-line interface for Obsidian — manage notes, canvases,
+  Excalidraw diagrams, Kanban boards, periodic notes, git, tasks, and more.
+  Includes an AI agent skill for persistent knowledge capture across sessions.
+---
 
-This skill gives your AI agent access to the user's Obsidian vault as a persistent knowledge store via the `obsidian` CLI.
+# obsidian-agent-cli
 
-The `obsidian` CLI must be installed (`pip install obsidian-agent-cli`) and configured (`obsidian config init`). All commands output JSON.
+A full-featured CLI for [Obsidian](https://obsidian.md/) that lets you manage your vault from the terminal. Designed for both direct use and AI agent integration — agents can register projects, log architectural discoveries, and recall prior knowledge across sessions.
 
-Before using any command, check connection:
+## Installation
+
 ```bash
+pip install obsidian-agent-cli
+```
+
+**Prerequisites:**
+- Python 3.10+
+- [Obsidian](https://obsidian.md/) desktop app
+- [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) community plugin (installed and enabled in Obsidian)
+
+**Setup:**
+```bash
+obsidian config init
+```
+
+You'll be prompted for your vault path, workspace folder name, REST API URL, and API key.
+
+## Usage
+
+### Basic Commands
+
+```bash
+# Verify connection
 obsidian status
+
+# Create a note
+obsidian note create "AI Workspace/my-project/arch.md" --content "# Architecture"
+
+# Read a note
+obsidian note read "AI Workspace/my-project/arch.md"
+
+# Search the vault
+obsidian search simple "authentication"
 ```
 
-## Vault Layout
+### Dual-Mode Transport
 
-The default workspace layout (configurable via `obsidian config set workspace_path`):
+Commands try the Obsidian REST API first. If Obsidian isn't running, most commands fall back to the vault filesystem directly. Every response includes a `"transport"` field indicating which was used (`"api"` or `"fs"`).
 
-- Workspace folder: `AI Workspace/`
-- Teaching notes: `AI Workspace/Teaching Notes/`
-- Per-project folders: `AI Workspace/<project-name>/`
-- Registry: `AI Workspace/registry.json`
-
-## When To Use
-
-### Auto-trigger (do without being asked):
-
-**At session start on a known project:**
-```bash
-obsidian workspace recall <project-name>
+All commands output JSON:
+```json
+{"ok": true, "transport": "api"}
+{"content": "# My Note\n\n...", "transport": "fs"}
+{"error": true, "message": "Note not found: AI Workspace/missing.md"}
 ```
 
-**First time on a new project:**
-```bash
-obsidian workspace project register <project-name>
-```
+## Command Groups
 
-**After discovering something architecturally significant:**
-```bash
-obsidian workspace log <project-name> "<discovery>"
-obsidian workspace log <project-name> "Decision: <decision and reason>"
-```
+### Workspace (AI Knowledge)
 
-### On-demand only:
+AI agent project registry and persistent knowledge log.
 
-**User asks for an explanation:**
-```bash
-obsidian teach write "<Topic Title>" --content "<markdown explanation>"
-```
-
-**User asks for a visual overview:**
-```bash
-obsidian canvas build "<project>-overview" --spec '<json spec>'
-obsidian canvas open "AI Workspace/<project>/<name>.canvas"
-```
-
-## Do NOT Use For
-
-- Trivial changes (typo fixes, single-line edits)
-- Teaching notes unless explicitly asked
-- Canvases for small or single-file changes
-- Logging things already in the knowledge log
-
-## Command Reference
-
-### Knowledge capture
-```bash
-obsidian workspace project register my-project
-obsidian workspace recall my-project
-obsidian workspace log my-project "Discovery text"
-obsidian workspace status
-```
+| Command | Description |
+|---------|-------------|
+| `workspace project register <name>` | Register a new project |
+| `workspace recall <name>` | Read everything known about a project |
+| `workspace log <name> "<text>"` | Log a discovery or decision |
+| `workspace status` | List all registered projects |
 
 ### Notes
-```bash
-obsidian note create "AI Workspace/my-project/arch.md" --content "# Architecture"
-obsidian note read "AI Workspace/my-project/arch.md"
-obsidian note update "AI Workspace/my-project/arch.md" "New content" --append
-obsidian note patch "AI Workspace/my-project/arch.md" "New line" \
-  --operation append --target-type heading --target "Dependencies"
-obsidian note list "AI Workspace/my-project"
-obsidian note open "AI Workspace/my-project/arch.md"
-obsidian note meta "AI Workspace/my-project/arch.md"
-obsidian note map "AI Workspace/my-project/arch.md"
-obsidian note backlinks "AI Workspace/my-project/arch.md"
-obsidian note recent --limit 20
-obsidian note by-tag "#project"
-```
+
+| Command | Description |
+|---------|-------------|
+| `note create <path>` | Create a note |
+| `note read <path>` | Read a note |
+| `note update <path>` | Overwrite or append to a note |
+| `note patch <path>` | Surgical heading/frontmatter edit |
+| `note delete <path>` | Delete a note |
+| `note meta <path>` | Read frontmatter, tags, file stat |
+| `note map <path>` | Read document structure (headings, blocks) |
+| `note list <folder>` | List notes in a folder |
+| `note backlinks <path>` | Notes linking to this note (Dataview) |
+| `note recent` | Recently modified notes (Dataview) |
+| `note by-tag <tag>` | Notes with a given tag (Dataview) |
 
 ### Search
-```bash
-obsidian search simple "authentication"
-obsidian search advanced "TABLE file.mtime FROM \"AI Workspace\" SORT file.mtime DESC LIMIT 10"
-obsidian search tags
-```
 
-### Canvases
-```bash
-obsidian canvas build "my-project-overview" --spec '{
-  "nodes": [
-    {"type": "text", "text": "# My Project"},
-    {"type": "file", "file": "AI Workspace/my-project/arch.md"}
-  ],
-  "edges": [{"from": 0, "to": 1, "label": "documented in", "color": "4"}]
-}'
-obsidian canvas open "AI Workspace/my-project/my-project-overview.canvas"
-obsidian canvas add-node "AI Workspace/my-project/overview.canvas" --type file --file "AI Workspace/my-project/new-note.md"
-obsidian canvas read "AI Workspace/my-project/overview.canvas"
-```
+| Command | Description |
+|---------|-------------|
+| `search simple <query>` | Full-text search across vault |
+| `search advanced <dql>` | Dataview DQL query |
+| `search tags` | List all tags in vault |
 
-### Teaching notes
-```bash
-obsidian teach write "How JWT Works" --content "JWT (JSON Web Token) is..."
-obsidian teach list
-obsidian teach open "How JWT Works"
-```
+### Canvas
 
-### Active note
-```bash
-obsidian active read
-obsidian active meta
-obsidian active write "# New"
-obsidian active append "- item"
-obsidian active patch "done" --target "Status" --target-type frontmatter --operation replace
-obsidian active delete
-```
+| Command | Description |
+|---------|-------------|
+| `canvas build <name> --spec <json>` | Build a canvas from a JSON spec |
+| `canvas read <path>` | Read canvas structure |
+| `canvas add-node <path>` | Add a node to existing canvas |
+| `canvas open <path>` | Open canvas in Obsidian |
 
-### Periodic notes
-```bash
-obsidian periodic today
-obsidian periodic get weekly
-obsidian periodic write daily "# Today\n\nContent"
-obsidian periodic append daily "- new item"
-obsidian periodic patch daily "done" --target "Tasks" --operation replace
-obsidian periodic delete daily
-obsidian periodic date daily 2026-05-11
-obsidian periodic nav daily prev
-obsidian periodic nav daily next
-```
+### Excalidraw
 
-### Vault operations
-```bash
-obsidian vault find "**/*meeting*.md"
-obsidian vault find "*.md" --folder "AI Workspace"
-obsidian vault move "AI Workspace/old.md" "AI Workspace/new.md"
-```
+| Command | Description |
+|---------|-------------|
+| `excalidraw build <path> --spec <json>` | Build diagram from spec |
+| `excalidraw create <path>` | Create empty drawing |
+| `excalidraw add-shape <path>` | Add shape to drawing |
+| `excalidraw read <path>` | Read drawing structure |
+
+### Kanban
+
+| Command | Description |
+|---------|-------------|
+| `kanban create <path>` | Create a Kanban board |
+| `kanban card add <path> <lane> <text>` | Add a card to a lane |
+| `kanban lane add <path> <name>` | Add a lane |
+| `kanban read <path>` | Read board structure |
+
+### Periodic Notes
+
+| Command | Description |
+|---------|-------------|
+| `periodic today` | Read today's daily note |
+| `periodic get <period>` | Read current weekly/monthly note |
+| `periodic append <period> <text>` | Append to current note |
+| `periodic patch <period> <text>` | Edit a heading section |
+| `periodic nav <period> prev\|next` | Navigate to adjacent note |
+
+### Active Note
+
+| Command | Description |
+|---------|-------------|
+| `active read` | Read note currently open in Obsidian |
+| `active write <content>` | Overwrite active note |
+| `active append <content>` | Append to active note |
+| `active patch <content>` | Surgical edit on active note |
+| `active meta` | Frontmatter + tags of active note |
+
+### Vault
+
+| Command | Description |
+|---------|-------------|
+| `vault find <glob>` | Find notes by glob pattern |
+| `vault move <src> <dst>` | Move or rename a note |
+
+### Batch
+
+| Command | Description |
+|---------|-------------|
+| `batch frontmatter <field> <value>` | Set frontmatter field across notes |
+| `batch rename <old> <new>` | Find-and-replace across notes |
 
 ### Tags
+
+| Command | Description |
+|---------|-------------|
+| `tags rename <old> <new>` | Rename a tag across entire vault |
+
+### Export
+
+| Command | Description |
+|---------|-------------|
+| `export bundle <output>` | Bundle notes into a single markdown file |
+
+### Teach
+
+| Command | Description |
+|---------|-------------|
+| `teach write <title>` | Write a reference/teaching note |
+| `teach list` | List all teaching notes |
+
+### Plugin Commands
+
+| Command | Description |
+|---------|-------------|
+| `git sync` | Commit + push via Obsidian Git plugin |
+| `tasks add <text>` | Add task with emoji markers |
+| `tasks list` | List tasks in vault |
+| `template insert` | Open Templater insert modal |
+| `lint` | Lint active file via Obsidian Linter |
+| `quickadd run <name>` | Run a QuickAdd choice |
+| `refactor rename <path> <name>` | Rename a note |
+| `meta get <path> <field>` | Get a frontmatter field value |
+| `meta set <path> <field> <value>` | Set a frontmatter field value |
+| `core palette` | Open Obsidian command palette |
+| `commands run <id>` | Run any Obsidian command by ID |
+
+## Examples
+
+### Register a project and recall prior knowledge
+
+```bash
+# First time on a project
+obsidian workspace project register my-app
+
+# Every subsequent session — read this before doing anything
+obsidian workspace recall my-app
+```
+
+### Log a discovery mid-session
+
+```bash
+obsidian workspace log my-app "Auth uses RS256 JWTs. Token expiry is 15 min."
+obsidian workspace log my-app "Decision: kept Postgres over MongoDB — team familiarity"
+```
+
+### Build a canvas overview
+
+```bash
+obsidian canvas build "my-app-overview" --spec '{
+  "nodes": [
+    {"type": "text", "text": "# My App"},
+    {"type": "file", "file": "AI Workspace/my-app/arch.md"}
+  ],
+  "edges": [
+    {"from": 0, "to": 1, "label": "documented in", "color": "4"}
+  ]
+}'
+```
+
+### Bulk operations with dry-run
+
 ```bash
 obsidian tags rename "#todo" "#task" --dry-run
 obsidian tags rename "#todo" "#task"
+
+obsidian batch frontmatter status archived --folder "AI Workspace/OldProjects" --dry-run
+obsidian batch frontmatter status archived --folder "AI Workspace/OldProjects"
 ```
 
-### Batch operations
-```bash
-obsidian batch frontmatter status active --folder "AI Workspace" --dry-run
-obsidian batch frontmatter status active --folder "AI Workspace"
-obsidian batch rename "Old Name" "New Name" --folder "AI Workspace" --dry-run
-obsidian batch rename "Old Name" "New Name" --folder "AI Workspace"
-obsidian batch rename "\d{4}-\d{2}-\d{2}" "REDACTED" --folder "AI Workspace" --regex
-```
+## For AI Agents
 
-### Export
-```bash
-obsidian export bundle context.md --folder "AI Workspace/my-app"
-```
+Drop `obsidian_skill.md` (included in this repo) into your project root. Your AI agent will automatically:
 
-### URI scheme
-```bash
-obsidian uri new --name "My Note" --folder "AI Workspace/inbox"
-obsidian uri search "#project status:active"
-```
+1. **Register new projects** on first encounter
+2. **Recall prior knowledge** at the start of every session
+3. **Log architectural discoveries** and decisions as they happen
+4. **Build visual canvases** and **write teaching notes** when asked
 
-### Excalidraw
-```bash
-obsidian excalidraw create "AI Workspace/my-project/diagram.excalidraw"
-obsidian excalidraw build "AI Workspace/my-project/flow.excalidraw" --spec '{
-  "elements": [
-    {"type": "rectangle", "label": "Start"},
-    {"type": "ellipse", "label": "Process"}
-  ],
-  "arrows": [{"from": 0, "to": 1}]
-}'
-obsidian excalidraw add-shape "AI Workspace/diagram.excalidraw" --type rectangle --label "Box"
-obsidian excalidraw add-arrow "AI Workspace/diagram.excalidraw" <from_id> <to_id>
-obsidian excalidraw read "AI Workspace/diagram.excalidraw"
-obsidian excalidraw open "AI Workspace/diagram.excalidraw"
-```
+When using this CLI programmatically:
 
-### Kanban
-```bash
-obsidian kanban create "AI Workspace/my-project/board.md" --lanes "To Do,In Progress,Done"
-obsidian kanban read "AI Workspace/my-project/board.md"
-obsidian kanban card add "AI Workspace/my-project/board.md" "To Do" "Implement feature X"
-obsidian kanban lane add "AI Workspace/my-project/board.md" "Blocked"
-obsidian kanban archive "AI Workspace/my-project/board.md"
-```
+1. **All commands output JSON** — always parse stdout, never scrape text
+2. **Check the `"error"` key** before using any other field
+3. **Check the `"transport"` key** — `"api"` means Obsidian is running, `"fs"` means filesystem fallback
+4. **Vault paths are always relative to vault root** — never use absolute paths in arguments
+5. **Use `--dry-run`** on all `batch` and `tags` commands before applying changes
+6. **Run `obsidian workspace recall <project>`** at session start before touching any code
 
-### Git (requires Obsidian Git plugin)
-```bash
-obsidian git sync
-obsidian git sync -m "feat: update notes"
-obsidian git commit
-obsidian git pull
-obsidian git push
-obsidian git status
-obsidian git fetch
-```
+## More Information
 
-### Tasks (requires Tasks plugin)
-```bash
-obsidian tasks add "Fix the bug" --file "AI Workspace/inbox.md"
-obsidian tasks add "Review PR" --file "AI Workspace/inbox.md" --due 2026-05-20 --priority high
-obsidian tasks list
-obsidian tasks list --folder "AI Workspace" --open-only
-```
+- Full documentation: See `docs/` in the repository
+- AI agent skill file: See `obsidian_skill.md` in the repository
+- Source: [https://github.com/ProxyLandLLC/obsidian-agent-cli](https://github.com/ProxyLandLLC/obsidian-agent-cli)
 
-### Other plugins
-```bash
-obsidian template insert
-obsidian lint
-obsidian lint --all
-obsidian quickadd run "Daily Note"
-obsidian refactor rename "AI Workspace/old.md" "new-name"
-obsidian mover rules
-obsidian meta get "AI Workspace/note.md" status
-obsidian meta set "AI Workspace/note.md" status active
-obsidian core palette
-obsidian core graph
-obsidian commands list
-obsidian commands run editor:open-link-in-new-tab
-```
+## Version
 
-### Status & config
-```bash
-obsidian status
-obsidian config show
-obsidian config set vault_path /path/to/vault
-obsidian config set api_key YOUR_KEY
-```
-
-## Canvas Color Guide
-- `"1"` = red (warnings)  `"2"` = orange (in progress)  `"3"` = yellow (todo)
-- `"4"` = green (done)    `"5"` = cyan (info)            `"6"` = purple (important)
-
-## Output Format
-
-All commands return JSON:
-- Success: `{"ok": true, ...}` or `{"content": "...", ...}`
-- Error: `{"error": true, "message": "..."}`
-- Transport: `"transport": "api"` (REST) or `"transport": "fs"` (filesystem fallback)
+0.1.0
