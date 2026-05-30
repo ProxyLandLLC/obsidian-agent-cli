@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.scripts]
-obsidian = "obsidian_cli.main:cli"
+obsidian-agent = "obsidian_cli.main:cli"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
