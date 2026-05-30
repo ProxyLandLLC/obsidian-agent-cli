@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "obsidian-agent-cli"
-version = "0.1.0"
+version = "0.1.1"
 description = "Full-featured CLI for Obsidian — manage notes, canvases, Excalidraw, Kanban, periodic notes, git, tasks, and more."
 authors = [
     {name = "ProxyLand", email = "proxylandllc@gmail.com"}
