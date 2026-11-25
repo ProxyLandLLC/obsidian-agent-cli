@@ -1,117 +1,61 @@
-# Installation Guide
+# Installation guide
 
-## What You Need First
+## Prerequisites
 
-Before installing the CLI, make sure the new PC has:
+Python 3.10+ and an existing vault directory. For live API operations, install Obsidian desktop and enable the Local REST API community plugin. Use a separate test vault for initial setup.
 
-1. **Python 3.10 or newer**
-   Open PowerShell and run:
-   ```powershell
-   python --version
-   ```
-   If you get an error or a version below 3.10, download Python from [python.org](https://www.python.org/downloads/) and install it. Check "Add Python to PATH" during setup.
+## Install from source
 
-2. **Obsidian** — the desktop app, installed and open.
-
-3. **Local REST API plugin** installed inside Obsidian:
-   - Open Obsidian → Settings → Community Plugins → Browse
-   - Search for **"Local REST API"**
-   - Install and Enable it
-   - Go to its settings tab and copy your **API Key** — you'll need it later
-
----
-
-## Step 1 — Get the Files onto the New PC
-
-You don't need git. Just copy the folder.
-
-**Easiest options:**
-
-- **USB drive** — copy the entire `Obsidian CLI` folder to a USB stick, plug it into the new PC, drag it somewhere like `C:\Users\YourName\Documents\`
-- **Cloud sync** — if you use OneDrive, Google Drive, or Dropbox, just put the folder there and it syncs automatically
-- **Zip file over email/transfer** — right-click the `Obsidian CLI` folder → Send to → Compressed (zipped) folder, then send that zip to yourself and unzip it on the new PC
-
-The folder just needs to exist somewhere on the new PC. It doesn't matter where.
-
----
-
-## Step 2 — Install
-
-Open PowerShell, navigate to wherever you put the folder, and run one command:
-
-```powershell
-cd "C:\Users\YourName\Documents\Obsidian CLI"
-pip install -e .
+```bash
+git clone https://github.com/ProxyLandLLC/obsidian-agent-cli.git
+cd obsidian-agent-cli
+python -m venv .venv
 ```
 
-> Replace the path with wherever you actually put the folder.
+Activate the environment: macOS/Linux (`source .venv/bin/activate`), Windows PowerShell (`.\.venv\Scripts\Activate.ps1`). Alternatively run Python and the installed CLI directly from that environment.
 
-That's it. Python reads the project and wires up the `obsidian` command globally.
-
----
-
-## Step 3 — Configure
-
-Run the setup wizard:
-
-```powershell
-obsidian config init
+```bash
+python -m pip install .
+obsidian-agent --help
+obsidian-agent config init
 ```
 
-It will ask you four things:
+| Setup prompt | Default or input |
+|---|---|
+| Vault path | Existing local directory chosen by the user |
+| Workspace path | AI Workspace |
+| Raw folder | Raw |
+| Inbox folder | Inbox |
+| Projects folder | Projects |
+| Reference folder | Reference |
+| Local REST API key | Optional for offline commands; hidden input |
+| API URL | http://127.0.0.1:27123 (match your plugin settings) |
+| Verify TLS certificates | Yes for HTTPS |
 
-| Prompt | What to enter |
-|--------|--------------|
-| Vault path | The full path to your Obsidian vault folder, e.g. `C:\Users\YourName\Documents\MyVault` |
-| Chief path | Just press Enter to accept the default (`Chief`) |
-| API URL | Just press Enter to accept the default (`https://127.0.0.1:27123`) |
-| API key | Paste the key you copied from Obsidian → Local REST API settings |
+Folder names must be distinct within the workspace, portable single directory names. Setup creates the directories and registry without overwriting notes. Existing legacy registries are unsupported; choose a fresh workspace. No migration or deletion is performed.
 
-Your config is saved automatically. You won't need to do this again.
+## Verify
 
----
-
-## Step 4 — Verify It Works
-
-With Obsidian open, run:
-
-```powershell
-obsidian status
+```bash
+obsidian-agent config show
+obsidian-agent workspace status
+obsidian-agent workspace project register example
+obsidian-agent workspace log example "First test entry"
+obsidian-agent workspace recall example
 ```
 
-You should see something like:
-```json
-{"ok": true, "versions": {"obsidian": "1.x.x"}, "transport": "api"}
+Check the configured Projects folder for the example knowledge log. For live API access, enable the plugin and run `obsidian-agent status`. API search, patch and UI/plugin commands require a reachable compatible API.
+
+Keep the local API key private. Prefer localhost; do not expose an unauthenticated API or disable TLS verification for remote connections. The local configuration is not encrypted. The workspace does not restrict the agent's filesystem access.
+
+## Run tests
+
+From the repository root:
+
+```bash
+python -m pip install -e .
+python -m pip install pytest
+python -m pytest -q
 ```
 
-If you see `"ok": true` — you're done.
-
----
-
-## If You Update the CLI Later
-
-When new commands are added to the CLI on your main PC, just copy the updated `Obsidian CLI` folder to the new PC again (replacing the old one), then run:
-
-```powershell
-cd "C:\Users\YourName\Documents\Obsidian CLI"
-pip install -e .
-```
-
-Your config is stored separately and won't be affected.
-
----
-
-## Troubleshooting
-
-**`obsidian` is not recognized as a command**
-- Make sure Python is on your PATH. Re-run the Python installer and check "Add Python to PATH", then open a new PowerShell window and try again.
-
-**`obsidian status` shows an error about the API**
-- Make sure Obsidian is open.
-- Make sure the Local REST API plugin is enabled (not just installed).
-- Double-check your API key: Obsidian → Settings → Local REST API → copy the key → run `obsidian config set api_key YOUR_KEY`.
-
-**Wrong vault path**
-```powershell
-obsidian config set vault_path "C:\Users\YourName\Documents\CorrectVaultName"
-```
+The automated tests use temporary vaults and mocks. A real Obsidian integration smoke test is still recommended before using important data.

@@ -1,7 +1,7 @@
 {
   "name": "obsidian-agent-cli",
   "display_name": "Obsidian CLI",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Full-featured CLI for Obsidian — manage notes, canvases, Excalidraw diagrams, Kanban boards, periodic notes, git, tasks, and more. Includes an AI agent skill for persistent knowledge capture and project memory.",
   "requires": [
     "Obsidian desktop app",
@@ -9,12 +9,22 @@
   ],
   "homepage": "https://obsidian.md",
   "source_url": "https://github.com/ProxyLandLLC/obsidian-agent-cli",
-  "install_cmd": "pip install obsidian-agent-cli",
+  "install_cmd": "python -m pip install git+https://github.com/ProxyLandLLC/obsidian-agent-cli.git",
   "entry_point": "obsidian-agent",
   "skill_md": "SKILL.md",
   "category": "productivity",
-  "tags": ["obsidian", "notes", "knowledge-management", "pkm", "canvas", "ai-agent"],
+  "tags": [
+    "obsidian",
+    "notes",
+    "knowledge-management",
+    "pkm",
+    "canvas",
+    "ai-agent"
+  ],
   "contributors": [
-    {"name": "ProxyLandLLC", "url": "https://github.com/ProxyLandLLC"}
+    {
+      "name": "ProxyLandLLC",
+      "url": "https://github.com/ProxyLandLLC"
+    }
   ]
 }

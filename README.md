@@ -2,37 +2,30 @@
 
 A full-featured command-line interface for [Obsidian](https://obsidian.md/) — manage your vault, capture knowledge, build canvases, and run plugin commands, all from the terminal or from an AI agent.
 
-Works with any AI coding assistant (Claude Code, Codex, Gemini CLI, etc.) via the included `obsidian_skill.md`.
+Includes reusable agent instructions for clients that support tool execution and custom skills or project context.
 
 ---
 
-## How It Works: Vault Structure
+## Workspace layout
 
-The CLI is designed around a clean separation of concerns inside your vault:
-
-```
-MyVault/                        ← your Obsidian vault root
-├── .obsidian/
-│
-├── AI Workspace/               ← the AI agent's dedicated folder (managed by this CLI)
-│   ├── registry.json           #   project registry
-│   ├── my-project/             #   per-project knowledge
-│   │   └── knowledge-log.md
-│   └── Teaching Notes/         #   reference notes written by the agent
-│
-├── Your Notes/                 ← your folders — the AI never touches these
-├── Projects/                   ← yours
-└── Journal/                    ← yours
+```text
+YourVault/
+├── AI Workspace/
+│   ├── Raw/                 # Unprocessed source material
+│   ├── Inbox/               # Captures and unassigned canvases
+│   ├── Projects/
+│   │   └── example/
+│   │       └── knowledge-log.md
+│   ├── Reference/           # Reference and teaching notes
+│   └── registry.json        # Project index
+└── Existing user folders/
 ```
 
-**The AI only operates inside `AI Workspace/`.** Every note, canvas, log, and registry file it creates lives there. Your own folders are completely untouched unless you explicitly pass their paths to a command.
+The setup wizard creates the workspace and four subfolders inside an existing vault. Each folder name is configurable. Project registration creates a directory under Projects; teaching commands use Reference; canvases without a specified folder use Inbox. Raw and Inbox are organizational conventions, not automatic processing pipelines.
 
-> 💡 **Recommended setup:** Create a dedicated Obsidian vault just for this — don't drop it into an existing vault you already use heavily. A fresh vault keeps things clean. Then `AI Workspace/` is one subfolder inside it, and any other top-level folders you create are entirely yours.
+Use a dedicated test vault first. The workspace is an organizational convention, **not a security sandbox**: commands accepting explicit paths and vault-wide operations can affect other files. Restrict the agent's OS permissions and review destructive or bulk operations.
 
-The `AI Workspace` folder name is just the default — rename it to anything you like:
-```bash
-obsidian config set workspace_path "My AI Zone"
-```
+This version uses a new registry format. Older workspace layouts are not migrated. Choose a fresh workspace name if an older registry exists. Existing files are not automatically deleted or moved.
 
 ---
 
@@ -67,49 +60,34 @@ obsidian config set workspace_path "My AI Zone"
 | `config` | View and update CLI configuration |
 | `commands` | List and run any Obsidian command by ID |
 
-**All commands output JSON.** Every command returns a single JSON object — parse it, pipe it, or feed it to an AI agent.
+**Structured results.** Most operational commands emit JSON; interactive setup, help and some errors emit text. Inspect both exit status and the returned error field.
 
-**Dual-mode transport.** Commands try the Obsidian REST API first. If Obsidian isn't running, most commands fall back to the vault filesystem directly.
-
----
-
-## Requirements
-
-- Python 3.10+
-- [Obsidian](https://obsidian.md/) desktop app
-- [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) community plugin (installed and enabled inside Obsidian)
+**Dual-mode transport.** Commands try the Obsidian REST API first. File read/write/list/delete operations support filesystem fallback when the REST API is unavailable. Search, patch and UI/plugin commands may require the running app.
 
 ---
 
-## Installation
+## Requirements and installation
+
+- Python 3.10 or newer
+- An existing local vault directory
+- Obsidian desktop and its [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) plugin for API-dependent commands
+
+Install from the source checkout:
 
 ```bash
-pip install obsidian-agent-cli
+git clone https://github.com/ProxyLandLLC/obsidian-agent-cli.git
+cd obsidian-agent-cli
+python -m venv .venv
+# Activate the virtual environment for your shell first.
+python -m pip install .
+obsidian-agent --help
+obsidian-agent config init
+obsidian-agent config show
 ```
 
-Then run the setup wizard:
+Setup prompts for the vault directory, workspace and subfolder names, optional API key, API URL and TLS verification. With Obsidian and the REST API enabled, run `obsidian-agent status` to inspect connectivity.
 
-```bash
-obsidian config init
-```
-
-You'll be prompted for:
-- Your vault path (e.g. `/home/yourname/Documents/MyVault`)
-- Your workspace folder name (default: `AI Workspace`)
-- The REST API URL (default: `http://127.0.0.1:27123`)
-- Your Local REST API key (copy from Obsidian → Settings → Local REST API)
-
-### Verify it works
-
-With Obsidian open:
-```bash
-obsidian status
-```
-
-You should see:
-```json
-{"ok": true, "versions": {"obsidian": "1.x.x"}, "transport": "api"}
-```
+See the [installation guide](docs/INSTALL.md) for platform-specific activation and testing instructions.
 
 ---
 
@@ -117,28 +95,28 @@ You should see:
 
 ```bash
 # Create a note
-obsidian note create "Projects/my-app/arch.md" --content "# Architecture"
+obsidian-agent note create "AI Workspace/Projects/my-app/arch.md" --content "# Architecture"
 
 # Read it back
-obsidian note read "Projects/my-app/arch.md"
+obsidian-agent note read "AI Workspace/Projects/my-app/arch.md"
 
 # Search across vault
-obsidian search simple "authentication"
+obsidian-agent search simple "authentication"
 
 # Register a project for AI knowledge tracking
-obsidian workspace project register my-app
+obsidian-agent workspace project register my-app
 
 # Log a discovery
-obsidian workspace log my-app "Auth uses RS256 JWTs. Token expiry is 15 min."
+obsidian-agent workspace log my-app "Auth uses RS256 JWTs. Token expiry is 15 min."
 
 # Read back everything the agent knows about this project
-obsidian workspace recall my-app
+obsidian-agent workspace recall my-app
 
 # Build a canvas overview
-obsidian canvas build "my-app-overview" --spec '{
+obsidian-agent canvas build "my-app-overview" --folder "AI Workspace/Projects/my-app" --spec '{
   "nodes": [
     {"type": "text", "text": "# My App"},
-    {"type": "file", "file": "Projects/my-app/arch.md"}
+    {"type": "file", "file": "AI Workspace/Projects/my-app/arch.md"}
   ],
   "edges": [
     {"from": 0, "to": 1, "label": "documented in", "color": "4"}
@@ -146,14 +124,14 @@ obsidian canvas build "my-app-overview" --spec '{
 }'
 
 # Sync vault with git
-obsidian git sync -m "feat: update project notes"
+obsidian-agent git sync -m "feat: update project notes"
 ```
 
 ---
 
 ## AI Agent Integration
 
-Drop `obsidian_skill.md` into any project root. Your AI agent (Claude Code, Codex, Gemini CLI, etc.) will automatically:
+Load `obsidian_skill.md` using your agent client's supported instruction or skill mechanism. The suggested workflow is to:
 
 1. **Register new projects** on first encounter
 2. **Recall prior knowledge** at the start of every session
@@ -166,15 +144,14 @@ See [docs/SKILL_SETUP.md](docs/SKILL_SETUP.md) for details.
 
 ## Configuration
 
-Config is stored in `~/.obsidian-cli/config.json`. You can edit it with `obsidian config`:
+Configuration is local to the user's home directory at `~/.obsidian-cli/config.json`; the API key is stored separately in `~/.obsidian-cli/.env`. Do not commit or share that file. It is not encrypted.
 
 ```bash
-obsidian config show                              # view current config
-obsidian config set vault_path /path/to/vault    # update vault path
-obsidian config set workspace_path "MyWorkspace"  # rename workspace folder
-obsidian config set api_key YOUR_KEY             # update API key
-obsidian config init                             # re-run setup wizard
+obsidian-agent config show
+obsidian-agent config init
 ```
+
+Choose the layout during setup. Changing folder names with `config set` provisions the selected paths but does not move existing content or update existing project registry entries. Use a fresh workspace when changing a populated project layout. Agent instructions must read the actual configured paths before using examples.
 
 ---
 
@@ -192,7 +169,7 @@ Many command groups require optional Obsidian plugins:
 
 | Plugin | Required by |
 |--------|------------|
-| [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) | Everything (core dependency) |
+| [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) | API-dependent commands |
 | [Dataview](https://github.com/blacksmithgu/obsidian-dataview) | `search advanced`, `note backlinks`, `note by-tag`, `note recent`, `note orphans`, `note links` |
 | [Obsidian Git](https://github.com/denolehov/obsidian-git) | `git` commands |
 | [Tasks](https://github.com/obsidian-tasks-group/obsidian-tasks) | `tasks ui`, `tasks toggle` |
@@ -204,10 +181,10 @@ Many command groups require optional Obsidian plugins:
 | [Excalidraw](https://github.com/zsviczian/obsidian-excalidraw-plugin) | `excalidraw` commands |
 | [Kanban](https://github.com/mgmeyers/obsidian-kanban) | `kanban archive` |
 
-Commands that don't require a plugin work directly on the filesystem and don't need Obsidian to be open.
+Filesystem-supported operations can work without Obsidian running; check individual command requirements.
 
 ---
 
 ## License
 
-MIT
+MIT (declared in package metadata; license notice to be finalized before release).

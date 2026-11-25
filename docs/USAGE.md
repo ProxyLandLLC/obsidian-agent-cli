@@ -2,7 +2,7 @@
 
 ## Core Concepts
 
-**All commands output JSON.** Every command prints a single JSON object to stdout — parse it, pipe it, or just read it.
+**Structured output.** Most operational commands return JSON. Setup, help and some errors use text; check exit status and the error field.
 
 ```json
 // Success
@@ -13,11 +13,13 @@
 {"error": true, "message": "Note not found: AI Workspace/missing.md"}
 ```
 
-**Dual-mode transport.** Commands try the Obsidian REST API first (requires Obsidian open). If the API is unavailable, most commands fall back to reading/writing the vault filesystem directly. The `"transport"` field in every response tells you which was used.
+**Dual-mode transport.** Commands try the Obsidian REST API first (requires Obsidian open). File read/write/list/delete support filesystem fallback. Search, patch and many UI commands require the API. When present, the transport field identifies the selected transport.
 
-**Vault paths are always relative to the vault root.** Never use absolute paths in arguments — use `AI Workspace/my-note.md`, not `C:\Users\...\AI Workspace\my-note.md`.
+**Supply vault-relative paths.** Never use absolute paths in arguments — use `AI Workspace/my-note.md`, not `C:\Users\...\AI Workspace\my-note.md`.
 
 ---
+
+Use `obsidian-agent config show` to discover configured paths. The examples assume default folder names. Raw and Inbox are conventions; Projects contains registered project logs and Reference receives teaching notes. The workspace is not a sandbox; avoid bulk or destructive actions without explicit approval.
 
 ## Command Groups
 
@@ -58,116 +60,116 @@
 
 ```bash
 # Create
-obsidian note create "AI Workspace/Projects/my-project/arch.md" --content "# Architecture"
+obsidian-agent note create "AI Workspace/Projects/my-project/arch.md" --content "# Architecture"
 
 # Read
-obsidian note read "AI Workspace/Projects/my-project/arch.md"
+obsidian-agent note read "AI Workspace/Projects/my-project/arch.md"
 
 # Append to a specific heading
-obsidian note patch "AI Workspace/Projects/my-project/arch.md" "New dependency: redis" \
+obsidian-agent note patch "AI Workspace/Projects/my-project/arch.md" "New dependency: redis" \
   --target "Dependencies" --operation append --create-if-missing
 
 # Read metadata (frontmatter, tags, file stat)
-obsidian note meta "AI Workspace/Projects/my-project/arch.md"
+obsidian-agent note meta "AI Workspace/Projects/my-project/arch.md"
 
 # Read document map (headings, blocks, frontmatter fields)
-obsidian note map "AI Workspace/Projects/my-project/arch.md"
+obsidian-agent note map "AI Workspace/Projects/my-project/arch.md"
 ```
 
 ### Work with today's daily note
 
 ```bash
-obsidian periodic today                              # read it
-obsidian periodic append daily "- Standup done"     # append a line
-obsidian periodic patch daily "done" \
+obsidian-agent periodic today                              # read it
+obsidian-agent periodic append daily "- Standup done"     # append a line
+obsidian-agent periodic patch daily "done" \
   --target "Tasks" --operation replace              # replace a heading section
-obsidian periodic nav daily next                    # open next day in Obsidian
+obsidian-agent periodic nav daily next                    # open next day in Obsidian
 ```
 
 ### Search the vault
 
 ```bash
-obsidian search simple "authentication middleware"
-obsidian search advanced "TABLE file.mtime FROM \"AI Workspace\" SORT file.mtime DESC LIMIT 10"
-obsidian note backlinks "AI Workspace/Projects/auth.md"
-obsidian note by-tag "#project"
-obsidian note recent --limit 20
+obsidian-agent search simple "authentication middleware"
+obsidian-agent search advanced "TABLE file.mtime FROM \"AI Workspace\" SORT file.mtime DESC LIMIT 10"
+obsidian-agent note backlinks "AI Workspace/Projects/auth.md"
+obsidian-agent note by-tag "#project"
+obsidian-agent note recent --limit 20
 ```
 
 ### AI workspace knowledge
 
 ```bash
 # Register a new project (run once)
-obsidian workspace project register my-app
+obsidian-agent workspace project register my-app
 
 # Read everything known about a project (run at session start)
-obsidian workspace recall my-app
+obsidian-agent workspace recall my-app
 
 # Log a discovery mid-session
-obsidian workspace log my-app "Auth uses RS256 JWTs. Expiry is 15 min."
-obsidian workspace log my-app "Decision: kept Postgres over MongoDB — team familiarity"
+obsidian-agent workspace log my-app "Auth uses RS256 JWTs. Expiry is 15 min."
+obsidian-agent workspace log my-app "Decision: kept Postgres over MongoDB — team familiarity"
 
 # Check all registered projects
-obsidian workspace status
+obsidian-agent workspace status
 ```
 
 ### Build a canvas overview
 
 ```bash
-obsidian canvas build "my-app-overview" --spec '{
+obsidian-agent canvas build "my-app-overview" --folder "AI Workspace/Projects/my-app" --spec '{
   "nodes": [
     {"type": "text", "text": "# My App"},
-    {"type": "file", "file": "AI Workspace/my-app/arch.md"},
-    {"type": "file", "file": "AI Workspace/my-app/decisions.md"}
+    {"type": "file", "file": "AI Workspace/Projects/my-app/arch.md"},
+    {"type": "file", "file": "AI Workspace/Projects/my-app/decisions.md"}
   ],
   "edges": [
     {"from": 0, "to": 1, "label": "documented in", "color": "4"},
     {"from": 0, "to": 2, "label": "decisions", "color": "5"}
   ]
 }'
-obsidian canvas open "AI Workspace/my-app/my-app-overview.canvas"
+obsidian-agent canvas open "AI Workspace/Projects/my-app/my-app-overview.canvas"
 ```
 
 ### Bulk operations
 
 ```bash
 # Rename a tag everywhere — preview first, then apply
-obsidian tags rename "#todo" "#task" --dry-run
-obsidian tags rename "#todo" "#task"
+obsidian-agent tags rename "#todo" "#task" --dry-run
+obsidian-agent tags rename "#todo" "#task"
 
 # Set a frontmatter field in all notes in a folder
-obsidian batch frontmatter status archived --folder "AI Workspace/OldProjects" --dry-run
-obsidian batch frontmatter status archived --folder "AI Workspace/OldProjects"
+obsidian-agent batch frontmatter status archived --folder "AI Workspace/Projects" --dry-run
+obsidian-agent batch frontmatter status archived --folder "AI Workspace/Projects"
 
 # Find and replace text across notes
-obsidian batch rename "OldCompanyName" "NewCompanyName" --folder "AI Workspace"
-obsidian batch rename "\b2024\b" "2025" --folder "AI Workspace" --regex --dry-run
+obsidian-agent batch rename "OldCompanyName" "NewCompanyName" --folder "AI Workspace"
+obsidian-agent batch rename "\b2024\b" "2025" --folder "AI Workspace" --regex --dry-run
 ```
 
 ### Find and move files
 
 ```bash
 # Find all notes matching a pattern
-obsidian vault find "**/*meeting*.md" --folder "AI Workspace"
+obsidian-agent vault find "**/*meeting*.md" --folder "AI Workspace"
 
 # Move/rename a note
-obsidian vault move "AI Workspace/inbox/rough-idea.md" "AI Workspace/Projects/my-app/idea.md"
+obsidian-agent vault move "AI Workspace/Inbox/rough-idea.md" "AI Workspace/Projects/my-app/idea.md"
 ```
 
 ### Export for AI context
 
 ```bash
 # Bundle an entire folder into one markdown file
-obsidian export bundle context.md --folder "AI Workspace/my-app"
+obsidian-agent export bundle context.md --folder "AI Workspace/Projects/my-app"
 # Then feed context.md to an AI tool
 ```
 
 ### Active note (what's open in Obsidian right now)
 
 ```bash
-obsidian active read
-obsidian active append "- New bullet point"
-obsidian active patch "in progress" \
+obsidian-agent active read
+obsidian-agent active append "- New bullet point"
+obsidian-agent active patch "in progress" \
   --target "status" --target-type frontmatter --operation replace
 ```
 
@@ -177,8 +179,8 @@ obsidian active patch "in progress" \
 
 **Pipe JSON through `jq` for readable output (on machines with jq):**
 ```bash
-obsidian note meta "AI Workspace/note.md" | jq '.frontmatter'
-obsidian workspace recall my-app | jq '.entries[-3:]'
+obsidian-agent note meta "AI Workspace/note.md" | jq '.frontmatter'
+obsidian-agent workspace recall my-app | jq '.content'
 ```
 
 **The `--dry-run` flag** is available on all destructive batch/tag commands. Always use it first.
