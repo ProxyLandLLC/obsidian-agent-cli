@@ -31,7 +31,7 @@ def test_canvas_create(vault, cfg):
     assert result.exit_code == 0
     out = json.loads(result.output)
     assert out["ok"] is True
-    canvas_file = vault / "AI Workspace" / "overview.canvas"
+    canvas_file = vault / "AI Workspace" / "Inbox" / "overview.canvas"
     assert canvas_file.exists()
     data = json.loads(canvas_file.read_text())
     assert data["nodes"] == []
@@ -57,7 +57,7 @@ def test_canvas_build_from_spec(vault, cfg):
     assert result.exit_code == 0
     out = json.loads(result.output)
     assert out["ok"] is True
-    canvas_file = vault / "AI Workspace" / "diagram.canvas"
+    canvas_file = vault / "AI Workspace" / "Inbox" / "diagram.canvas"
     data = json.loads(canvas_file.read_text())
     assert len(data["nodes"]) == 2
     assert len(data["edges"]) == 1
@@ -65,10 +65,10 @@ def test_canvas_build_from_spec(vault, cfg):
 
 def test_canvas_add_text_node(vault, cfg):
     run_canvas(cfg, "create", "mycanvas")
-    result = run_canvas(cfg, "add-node", "AI Workspace/mycanvas.canvas", "--type", "text", "--text", "Hello")
+    result = run_canvas(cfg, "add-node", "AI Workspace/Inbox/mycanvas.canvas", "--type", "text", "--text", "Hello")
     assert result.exit_code == 0
     out = json.loads(result.output)
     assert out["ok"] is True
-    data = json.loads((vault / "AI Workspace" / "mycanvas.canvas").read_text())
+    data = json.loads((vault / "AI Workspace" / "Inbox" / "mycanvas.canvas").read_text())
     assert len(data["nodes"]) == 1
     assert data["nodes"][0]["text"] == "Hello"

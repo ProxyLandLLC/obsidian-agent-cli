@@ -13,11 +13,11 @@ def canvas():
 
 @canvas.command()
 @click.argument("name")
-@click.option("--folder", default=None, help="Vault path for canvas (default: AI Workspace/)")
+@click.option("--folder", default=None, help="Vault path for canvas (default: configured Inbox)")
 def create(name, folder):
     cfg = load_config()
     if folder is None:
-        folder = cfg.workspace_path
+        folder = cfg.inbox_path
     vault_path = f"{folder}/{name}.canvas"
     abs_path = Path(cfg.vault_path) / vault_path
     abs_path.parent.mkdir(parents=True, exist_ok=True)
@@ -99,7 +99,7 @@ def add_edge(canvas_path, from_id, to_id, label, color):
 def build(name, spec, folder):
     cfg = load_config()
     if folder is None:
-        folder = cfg.workspace_path
+        folder = cfg.inbox_path
     try:
         spec_data = json.loads(spec)
     except json.JSONDecodeError as e:

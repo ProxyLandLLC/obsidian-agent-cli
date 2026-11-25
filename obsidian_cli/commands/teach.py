@@ -16,7 +16,7 @@ def teach():
 def write(title, content):
     cfg = load_config()
     slug = re.sub(r"[^\w\s-]", "", title).strip().replace(" ", "-").lower()
-    vault_path = f"{cfg.teach_path}/{slug}.md"
+    vault_path = f"{cfg.reference_path}/{slug}.md"
     full_content = f"# {title}\n\n{content}"
     t = Transport(cfg)
     result = t.write_file(vault_path, full_content)
@@ -28,7 +28,7 @@ def write(title, content):
 def list_notes():
     cfg = load_config()
     t = Transport(cfg)
-    result = t.list_files(cfg.teach_path)
+    result = t.list_files(cfg.reference_path)
     click.echo(json.dumps(result))
 
 
@@ -37,7 +37,7 @@ def list_notes():
 def open_note(title):
     cfg = load_config()
     slug = re.sub(r"[^\w\s-]", "", title).strip().replace(" ", "-").lower()
-    vault_path = f"{cfg.teach_path}/{slug}.md"
+    vault_path = f"{cfg.reference_path}/{slug}.md"
     t = Transport(cfg)
     result = t.open_in_obsidian(vault_path)
     click.echo(json.dumps(result))

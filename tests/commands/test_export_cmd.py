@@ -9,10 +9,10 @@ from obsidian_cli.config import Config
 
 @pytest.fixture
 def vault(tmp_path):
-    chief = tmp_path / "AI Workspace"
-    chief.mkdir()
-    (chief / "note1.md").write_text("# Note 1\n\nContent 1", encoding="utf-8")
-    (chief / "note2.md").write_text("# Note 2\n\nContent 2", encoding="utf-8")
+    workspace_dir = tmp_path / "AI Workspace"
+    workspace_dir.mkdir()
+    (workspace_dir / "note1.md").write_text("# Note 1\n\nContent 1", encoding="utf-8")
+    (workspace_dir / "note2.md").write_text("# Note 2\n\nContent 2", encoding="utf-8")
     (tmp_path / ".obsidian").mkdir()
     (tmp_path / ".obsidian" / "config").write_text("{}", encoding="utf-8")
     return tmp_path

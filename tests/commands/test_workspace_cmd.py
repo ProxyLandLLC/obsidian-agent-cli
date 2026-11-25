@@ -41,7 +41,7 @@ def test_workspace_project_register(vault, cfg):
     assert result.exit_code == 0
     out = json.loads(result.output)
     assert out["ok"] is True
-    assert (vault / "AI Workspace" / "my-app").is_dir()
+    assert (vault / "AI Workspace" / "Projects" / "my-app").is_dir()
 
 
 def test_workspace_log(vault, cfg):
@@ -51,7 +51,7 @@ def test_workspace_log(vault, cfg):
     assert result.exit_code == 0
     out = json.loads(result.output)
     assert out["ok"] is True
-    log = (vault / "AI Workspace" / "my-app" / "knowledge-log.md").read_text()
+    log = (vault / "AI Workspace" / "Projects" / "my-app" / "knowledge-log.md").read_text()
     assert "Uses PostgreSQL for persistence" in log
 
 

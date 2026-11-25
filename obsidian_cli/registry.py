@@ -1,7 +1,7 @@
 import json
 from datetime import date, datetime
 from pathlib import Path
-from .config import Config
+from .config import Config, validate_folder
 
 
 class Registry:
@@ -11,28 +11,33 @@ class Registry:
 
     def _load(self) -> dict:
         if self._registry_path.exists():
-            return json.loads(self._registry_path.read_text(encoding="utf-8"))
-        return {"projects": {}}
+            data = json.loads(self._registry_path.read_text(encoding="utf-8"))
+            if data.get("schema_version") != 2 or not isinstance(data.get("projects"), dict):
+                raise ValueError("Unsupported registry format; select a fresh workspace name")
+            return data
+        return {"schema_version": 2, "projects": {}}
 
     def _save(self, data: dict) -> None:
         self._registry_path.parent.mkdir(parents=True, exist_ok=True)
         self._registry_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
     def _project_dir(self, name: str) -> Path:
-        return Path(self.config.vault_path) / self.config.workspace_path / name
+        validate_folder(name)
+        return Path(self.config.vault_path) / self.config.projects_path / name
 
     def _log_path(self, name: str) -> Path:
         return self._project_dir(name) / "knowledge-log.md"
 
     def register_project(self, name: str) -> dict:
+        validate_folder(name)
         data = self._load()
         if name not in data["projects"]:
             data["projects"][name] = {
                 "registered": str(date.today()),
-                "path": f"{self.config.workspace_path}/{name}",
+                "path": f"{self.config.projects_path}/{name}",
                 "notes": [],
                 "canvases": [],
-                "log": f"{self.config.workspace_path}/{name}/knowledge-log.md",
+                "log": f"{self.config.projects_path}/{name}/knowledge-log.md",
             }
             self._save(data)
         proj_dir = self._project_dir(name)
@@ -45,7 +50,7 @@ class Registry:
     def log(self, project: str, text: str) -> dict:
         data = self._load()
         if project not in data["projects"]:
-            return {"error": True, "message": f"Project '{project}' not found. Run: obsidian workspace project register {project}"}
+            return {"error": True, "message": f"Project '{project}' not found. Run: obsidian-agent workspace project register {project}"}
         log = self._log_path(project)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
         entry = f"\n## {timestamp}\n{text}\n"

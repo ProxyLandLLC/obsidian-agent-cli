@@ -10,13 +10,16 @@ def test_load_config_returns_defaults_when_no_file(tmp_path):
     assert cfg.vault_path == ""
     assert cfg.api_url == "http://127.0.0.1:27123"
     assert cfg.workspace_path == "AI Workspace"
-    assert cfg.teach_path == "AI Workspace/Teaching Notes"
+    assert cfg.reference_path == "AI Workspace/Reference"
+    assert cfg.raw_path == "AI Workspace/Raw"
+    assert cfg.inbox_path == "AI Workspace/Inbox"
+    assert cfg.projects_path == "AI Workspace/Projects"
 
 def test_save_and_load_config(tmp_path):
     cfg = Config(
         vault_path="/my/vault",
         workspace_path="AI Workspace",
-        teach_path="AI Workspace/Teaching Notes",
+        reference_folder="Reference",
         api_url="http://127.0.0.1:27123",
         api_key="secret123",
         api_verify_ssl=False,
